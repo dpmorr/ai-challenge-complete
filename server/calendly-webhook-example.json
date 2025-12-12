@@ -1,0 +1,84 @@
+{
+  "event": "invitee.created",
+  "payload": {
+    "event_type": {
+      "uuid": "AAAAAAAAAAAAAAAA",
+      "kind": "One-on-One",
+      "slug": "legal-consultation",
+      "name": "Legal Consultation",
+      "duration": 30,
+      "owner": {
+        "type": "users",
+        "uuid": "BBBBBBBBBBBBBBBB"
+      }
+    },
+    "event": {
+      "uuid": "CCCCCCCCCCCCCCCC",
+      "assigned_to": [
+        "alice.johnson@acme.corp"
+      ],
+      "extended_assigned_to": [
+        {
+          "name": "Alice Johnson",
+          "email": "alice.johnson@acme.corp",
+          "primary": true
+        }
+      ],
+      "start_time": "2025-12-12T15:00:00.000000Z",
+      "start_time_pretty": "03:00pm - Thursday, December 12, 2025",
+      "invitee_start_time": "2025-12-12T15:00:00.000000Z",
+      "invitee_start_time_pretty": "03:00pm - Thursday, December 12, 2025",
+      "end_time": "2025-12-12T15:30:00.000000Z",
+      "end_time_pretty": "03:30pm - Thursday, December 12, 2025",
+      "invitee_end_time": "2025-12-12T15:30:00.000000Z",
+      "invitee_end_time_pretty": "03:30pm - Thursday, December 12, 2025",
+      "created_at": "2025-12-11T10:00:00.000000Z",
+      "location": "Zoom Meeting",
+      "canceled": false,
+      "canceler_name": null,
+      "cancel_reason": null,
+      "canceled_at": null
+    },
+    "invitee": {
+      "uuid": "DDDDDDDDDDDDDDDD",
+      "first_name": "John",
+      "last_name": "Client",
+      "name": "John Client",
+      "email": "john.client@example.com",
+      "text_reminder_number": null,
+      "timezone": "America/New_York",
+      "created_at": "2025-12-11T10:00:00.000000Z",
+      "is_reschedule": false,
+      "payments": [],
+      "canceled": false,
+      "canceler_name": null,
+      "cancel_reason": null,
+      "canceled_at": null
+    },
+    "questions_and_answers": [
+      {
+        "question": "What is the nature of your legal request?",
+        "answer": "Sales contract review for Australia region"
+      }
+    ],
+    "questions_and_responses": {
+      "1": {
+        "question": "What is the nature of your legal request?",
+        "answer": "Sales contract review for Australia region"
+      }
+    },
+    "tracking": {
+      "utm_campaign": null,
+      "utm_source": null,
+      "utm_medium": null,
+      "utm_content": null,
+      "utm_term": null,
+      "salesforce_uuid": null
+    },
+    "old_event": null,
+    "old_invitee": null,
+    "new_event": null,
+    "new_invitee": null
+  },
+  "time": "2025-12-11T10:00:00.000000Z"
+}

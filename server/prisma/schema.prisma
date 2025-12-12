@@ -1,0 +1,212 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Triage Rules - migrated from in-memory storage
+model TriageRule {
+  id         String      @id @default(uuid())
+  name       String
+  assignee   String
+  priority   Int
+  enabled    Boolean     @default(true)
+  conditions Condition[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([priority])
+}
+
+model Condition {
+  id           String      @id @default(uuid())
+  field        String
+  operator     String      // 'equals' | 'contains'
+  value        String
+  triageRuleId String
+  triageRule   TriageRule  @relation(fields: [triageRuleId], references: [id], onDelete: Cascade)
+
+  @@index([triageRuleId])
+}
+
+// User authentication and session management
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String?   // Optional: for future password-based auth
+  isActive      Boolean   @default(true)
+  lastLoginAt   DateTime?
+  employeeId    String?   @unique
+  employee      Employee? @relation(fields: [employeeId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([employeeId])
+}
+
+// Employee profiles for context-aware triage
+model Employee {
+  id                String             @id @default(uuid())
+  email             String             @unique
+  firstName         String
+  lastName          String
+  department        String
+  location          String
+  role              String
+  tags              String[]           // Searchable tags (e.g., "VIP", "Manager", "Remote")
+  calendarAvailability Json?           // Calendar availability/schedule
+  documents         EmployeeDocument[]
+  user              User?              // Link to user authentication
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([email])
+  @@index([department])
+  @@index([location])
+}
+
+// Documents attached to employees
+model EmployeeDocument {
+  id          String    @id @default(uuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  documentId  String
+  document    Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  attachedAt  DateTime  @default(now())
+  notes       String?   // Optional notes about why this document is attached
+
+  @@index([employeeId])
+  @@index([documentId])
+  @@unique([employeeId, documentId])
+}
+
+// Lawyer profiles with skills and availability
+model Lawyer {
+  id                   String         @id @default(uuid())
+  email                String         @unique
+  name                 String         @default("") // Full name for display
+  specialties          String[]       @default([]) // Array of specialties (e.g., ["Sales Contract", "NDA"])
+  locations            String[]       @default([]) // Regions they cover (e.g., ["United States", "Canada"])
+  departments          String[]       @default([]) // Departments they work with (e.g., ["Sales", "Engineering"])
+  tags                 String[]       @default([]) // Searchable tags (e.g., ["VIP", "Executive", "Remote"])
+  calendarAvailability Json?          // Calendar availability/schedule from Calendly
+  maxCaseLoad          Int            @default(10)
+  currentLoad          Int            @default(0)
+  available            Boolean        @default(true)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@index([email])
+  @@index([available])
+}
+
+// Legal terminology library for fuzzy matching
+model LegalTerm {
+  id        String   @id @default(uuid())
+  term      String   @unique
+  category  String   // e.g., "request_type", "department"
+  synonyms  String[] // Array of alternative phrasings
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+}
+
+// Conversation history for analytics and learning
+model Conversation {
+  id           String            @id @default(uuid())
+  employeeId   String?
+  messages     ConversationMsg[]
+  assignedTo   String?
+  resolved     Boolean           @default(false)
+  extractedInfo Json?            // Stores extracted information as JSON
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([employeeId])
+  @@index([assignedTo])
+  @@index([createdAt])
+}
+
+model ConversationMsg {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String       // 'user' | 'assistant' | 'system'
+  content        String       @db.Text
+  timestamp      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+// Document library for RAG (Retrieval Augmented Generation)
+model Document {
+  id          String             @id @default(uuid())
+  title       String
+  content     String             @db.Text
+  category    String             // e.g., "policy", "precedent", "template", "guide"
+  tags        String[]           // Searchable tags
+  metadata    Json?              // Additional metadata
+  embeddings  DocumentChunk[]    // Relationship to embeddings
+  employees   EmployeeDocument[] // Employees this document is attached to
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([category])
+  @@index([createdAt])
+}
+
+// Document chunks with embeddings for semantic search
+// Note: Actual vector storage will be in Pinecone for better performance
+model DocumentChunk {
+  id            String    @id @default(uuid())
+  documentId    String
+  document      Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkIndex    Int       // Position in document
+  content       String    @db.Text
+  vectorId      String?   // Reference to Pinecone vector ID
+  tokenCount    Int       @default(0)
+  createdAt     DateTime  @default(now())
+
+  @@index([documentId])
+  @@index([vectorId])
+  @@unique([documentId, chunkIndex])
+}
+
+// Email routing logs for webhook integration
+model EmailRoute {
+  id            String    @id @default(uuid())
+  fromEmail     String
+  subject       String
+  body          String    @db.Text
+  routedTo      String?   // Assigned lawyer email
+  ruleMatched   String?   // Rule ID that was matched
+  confidence    Float?    // Confidence score (0-1)
+  status        String    // 'pending', 'routed', 'failed'
+  errorMessage  String?   @db.Text
+  metadata      Json?     // Webhook metadata
+  createdAt     DateTime  @default(now())
+  processedAt   DateTime?
+
+  @@index([fromEmail])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Semantic search cache for faster responses
+model SemanticSearchCache {
+  id          String    @id @default(uuid())
+  query       String    @unique
+  results     Json      // Cached search results
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime  // TTL for cache invalidation
+
+  @@index([expiresAt])
+}
